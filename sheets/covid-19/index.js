@@ -15,7 +15,9 @@ fs.readFile('credentials.json', (err, content) => {
 	if (err) return console.log('Error loading client secret file:', err);
 	// Authorize a client with credentials, then call the Google Sheets API.
 	//authorize(JSON.parse(content), listPercentPopulation);
-	authorize(JSON.parse(content), addSheet);
+	//authorize(JSON.parse(content), addSheet);
+	//authorize(JSON.parse(content), setCountries);
+	authorize(JSON.parse(content), setDateRanges);
     });
 
 /**
@@ -128,7 +130,6 @@ function listPercentPopulation(auth) {
  */
 function addSheet(auth) {
     const spreadsheetId = '1kCfWxRrL3lm3CgVDS5wYZRad-8ogexNL5NZgpoR0IwY'
-    const range = 'percent population!A2:E'
     const sheetName = 'test sheet'
 
     let requests = [];
@@ -136,15 +137,15 @@ function addSheet(auth) {
     requests.push({
 	"addSheet": {
 	    "properties": {
-		"title": "Deposits",
+		"title": sheetName,
 		"gridProperties": {
 		    "rowCount": 20,
 		    "columnCount": 12
 		},
 		"tabColor": {
-		    "red": 1.0,
-		    "green": 0.3,
-		    "blue": 0.4
+		    "red": 0.0,
+		    "green": 1.0,
+		    "blue": 0.0
 		}
 	    }
 	}
@@ -154,6 +155,8 @@ function addSheet(auth) {
     const batchUpdateRequest = {requests};
 
     const sheets = google.sheets({version: 'v4', auth});
+
+    //https://developers.google.com/sheets/api/reference/rest/v4/spreadsheets/batchUpdate
     sheets.spreadsheets.batchUpdate({
       spreadsheetId: spreadsheetId,
       resource: batchUpdateRequest,
@@ -161,5 +164,143 @@ function addSheet(auth) {
       if (err) return console.log('The API returned an error: ' + err);
       console.log(res);
     });
+
+
 }
 
+/**
+ * Adds a sheet to a spreadsheet
+ * @see https://docs.google.com/spreadsheets/d/1kCfWxRrL3lm3CgVDS5wYZRad-8ogexNL5NZgpoR0IwY/edit#gid=997476041
+ * @param {google.auth.OAuth2} auth The authenticated Google OAuth client.
+ */
+function setCountries(auth) {
+    const spreadsheetId = '1kCfWxRrL3lm3CgVDS5wYZRad-8ogexNL5NZgpoR0IwY'
+    const sheetName = 'test sheet'
+    const range = `${sheetName}!A1`
+
+    // https://developers.google.com/sheets/api/reference/rest/v4/spreadsheets.values/update
+    // https://developers.google.com/sheets/api/reference/rest/v4/spreadsheets.values#ValueRange
+
+    const request = {
+	// The ID of the spreadsheet to update.
+	spreadsheetId: spreadsheetId,
+
+	// The A1 notation of the values to update.
+	"range": range,
+
+	// How the input data should be interpreted.
+	valueInputOption: 'USER_ENTERED',
+
+	resource: {
+	    "range": range,
+	    "majorDimension": "ROWS",
+	    "values": [
+		       ['China'],
+		       ['India'],
+		       ['Iran'],
+		       ['Italy'],
+		       ['Spain'],
+		       ['US'],
+		       ['Germany'],
+		       ['World'],
+		       ],
+	},
+
+	auth: auth,
+    }
+
+    const sheets = google.sheets({version: 'v4', auth});
+    try {
+	//const response = (await sheets.spreadsheets.values.update(request)).data;
+	const response = sheets.spreadsheets.values.update(request).data;
+	// TODO: Change code below to process the `response` object:
+	console.log(JSON.stringify(response, null, 2));
+    } catch (err) {
+	console.error(err);
+    }
+}
+
+/**
+ * Adds a sheet to a spreadsheet
+ * @see https://docs.google.com/spreadsheets/d/1kCfWxRrL3lm3CgVDS5wYZRad-8ogexNL5NZgpoR0IwY/edit#gid=997476041
+ * @param {google.auth.OAuth2} auth The authenticated Google OAuth client.
+ */
+function setDateRanges(auth) {
+    const spreadsheetId = '1kCfWxRrL3lm3CgVDS5wYZRad-8ogexNL5NZgpoR0IwY'
+    const sheetName = 'test sheet'
+    const range = `${sheetName}!A1`
+
+    // https://developers.google.com/sheets/api/reference/rest/v4/spreadsheets.values/update
+    // https://developers.google.com/sheets/api/reference/rest/v4/spreadsheets.values#ValueRange
+
+    const deathTab = 'time_series_covid19_deaths_global.csv'
+    const confirmedTab = 'time_series_covid19_confirmed_global'
+    const days = 90
+    const startDateString='2020-03-01'
+    const startColumnNum = alphaToNum('AR')
+
+    const values = []
+    for (i = 0; i < days; i++) {
+        date = new Date(startDateString)
+        date.setDate(date.getDate() + i)
+	column=numToAlpha(startColumnNum + i)
+        column=`!${column}:${column}`
+
+	dateString=(date.getUTCMonth()+1) + '-' + date.getUTCDate() + '-' + date.getUTCFullYear() 
+	values[i] = [i, column, date.toISOString(), dateString, deathTab + column, confirmedTab + column]
+    }
+
+    const request = {
+	// The ID of the spreadsheet to update.
+	spreadsheetId: spreadsheetId,
+
+	// The A1 notation of the values to update.
+	"range": range,
+
+	// How the input data should be interpreted.
+	valueInputOption: 'USER_ENTERED',
+
+	resource: {
+	    "range": range,
+	    "majorDimension": "ROWS",
+	    "values": values
+	},
+
+	auth: auth,
+    }
+
+    const sheets = google.sheets({version: 'v4', auth});
+    try {
+	//const response = (await sheets.spreadsheets.values.update(request)).data;
+	const response = sheets.spreadsheets.values.update(request).data;
+	// TODO: Change code below to process the `response` object:
+	console.log(JSON.stringify(response, null, 2));
+    } catch (err) {
+	console.error(err);
+    }
+}
+
+// https://stackoverflow.com/questions/34813980/getting-an-array-of-column-names-at-sheetjs
+function numToAlpha(num) {
+
+    var alpha = '';
+
+    for (; num >= 0; num = parseInt(num / 26, 10) - 1) {
+	alpha = String.fromCharCode(num % 26 + 0x41) + alpha;
+    }
+
+    return alpha;
+}
+
+function alphaToNum(alpha) {
+
+    var i = 0,
+	num = 0,
+	len = alpha.length;
+
+    for (; i < len; i++) {
+	num = num * 26 + alpha.charCodeAt(i) - 0x40;
+    }
+
+    return num - 1;
+}
