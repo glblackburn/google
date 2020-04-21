@@ -16,9 +16,8 @@ fs.readFile('credentials.json', (err, content) => {
     // Authorize a client with credentials, then call the Google Sheets API.
     //authorize(JSON.parse(content), listPercentPopulation);
     //authorize(JSON.parse(content), addSheet);
-    authorize(JSON.parse(content), setSheet);
     authorize(JSON.parse(content), setCountries);
-    authorize(JSON.parse(content), setDateRanges);
+    //authorize(JSON.parse(content), setDateRanges);
 });
 
 /**
@@ -123,15 +122,57 @@ function listPercentPopulation(auth) {
     });
 }
 
-/**
- * Adds a sheet to a spreadsheet
- * @see https://docs.google.com/spreadsheets/d/1kCfWxRrL3lm3CgVDS5wYZRad-8ogexNL5NZgpoR0IwY/edit#gid=997476041
- * @param {google.auth.OAuth2} auth The authenticated Google OAuth client.
- */
-function addSheet(auth) {
-    const spreadsheetId = '1kCfWxRrL3lm3CgVDS5wYZRad-8ogexNL5NZgpoR0IwY'
-    const sheetName = 'test sheet'
+async function sheetExists(auth, spreadsheetId, sheetName) {
+    console.log(`sheetExists: spreadsheetId=[${spreadsheetId}] sheetName=[${sheetName}]`)
+
+    const sheets = google.sheets({version: 'v4', auth});
+    const request = {
+	// The spreadsheet to request.
+	spreadsheetId: spreadsheetId,
+	ranges: [],
+	includeGridData: false,
+	auth: auth,
+    };
+
+    let found=false;
+    try {
+	const response = (await sheets.spreadsheets.get(request)).data;
+	//console.log(response);
+	//console.log('================================================================================');
+	//console.log(JSON.stringify(response, null, 2));
+	//console.log('================================================================================');
+	//TODO: work out how to use forEach instead of loop
+	response.sheets.forEach(element => console.log(element.properties.title))
+	for (i=0 ; i<response.sheets.length ; i++) {
+	    if (sheetName == response.sheets[i].properties.title) {
+		found = true
+	    }
+	}
+    } catch (err) {
+	console.error(err);
+    }
     
+    console.log(`sheetExists: found=[${found}]`)
+    return found;
+}
+
+
+/**
+ * Create a sheet tab if it does not exist.
+ * @param {google.auth.OAuth2} auth The authenticated Google OAuth client.
+ * @param {string} sheet name to create.
+ */
+async function createSheet(auth, spreadsheetId, sheetName) {
+    console.log(`createSheet: spreadsheetId=[${spreadsheetId}] sheetName=[${sheetName}]`)
+
+    const sheets = google.sheets({version: 'v4', auth});
+
+    //return if sheet already exists
+    if (await sheetExists(auth, spreadsheetId, sheetName)) {
+	return console.log('createSheet: sheet already exists');
+    }
+    console.log('createSheet: sheet does not exists. creating...');
+    //if the sheet does not exist add the sheet.
     let requests = [];
     // Change the spreadsheet's title.
     requests.push({
@@ -154,16 +195,15 @@ function addSheet(auth) {
     // Add additional requests (operations) ...
     const batchUpdateRequest = {requests};
 
-    const sheets = google.sheets({version: 'v4', auth});
-
     //https://developers.google.com/sheets/api/reference/rest/v4/spreadsheets/batchUpdate
     sheets.spreadsheets.batchUpdate({
 	spreadsheetId: spreadsheetId,
 	resource: batchUpdateRequest,
     }, (err, res) => {
-	if (err) return console.log('The API returned an error: ' + err);
+	if (err) return console.log('createSheet: The API returned an error: ' + err);
 	console.log(res);
     });
+    return console.log('createSheet: sheet created');
 }
 
 /**
@@ -171,9 +211,24 @@ function addSheet(auth) {
  * @see https://docs.google.com/spreadsheets/d/1kCfWxRrL3lm3CgVDS5wYZRad-8ogexNL5NZgpoR0IwY/edit#gid=997476041
  * @param {google.auth.OAuth2} auth The authenticated Google OAuth client.
  */
-function setCountries(auth) {
+function addSheet(auth) {
     const spreadsheetId = '1kCfWxRrL3lm3CgVDS5wYZRad-8ogexNL5NZgpoR0IwY'
     const sheetName = 'test sheet'
+
+    createSheet(auth, spreadsheetId, sheetName)
+}
+
+/**
+ * Adds a sheet to a spreadsheet
+ * @see https://docs.google.com/spreadsheets/d/1kCfWxRrL3lm3CgVDS5wYZRad-8ogexNL5NZgpoR0IwY/edit#gid=997476041
+ * @param {google.auth.OAuth2} auth The authenticated Google OAuth client.
+ */
+async function setCountries(auth) {
+    const spreadsheetId = '1kCfWxRrL3lm3CgVDS5wYZRad-8ogexNL5NZgpoR0IwY'
+    const sheetName = 'test sheet'
+
+    await createSheet(auth, spreadsheetId, sheetName)
+
     const range = `${sheetName}!A1`
 
     // https://developers.google.com/sheets/api/reference/rest/v4/spreadsheets.values/update
@@ -205,8 +260,8 @@ function setCountries(auth) {
 
     const sheets = google.sheets({version: 'v4', auth});
     try {
-	//const response = (await sheets.spreadsheets.values.update(request)).data;
-	const response = sheets.spreadsheets.values.update(request).data;
+	const response = (await sheets.spreadsheets.values.update(request)).data;
+	//const response = sheets.spreadsheets.values.update(request).data;
 	// TODO: Change code below to process the `response` object:
 	console.log(JSON.stringify(response, null, 2));
     } catch (err) {
@@ -240,6 +295,9 @@ function alphaToNum(alpha) {
 function setDateRanges(auth) {
     const spreadsheetId = '1kCfWxRrL3lm3CgVDS5wYZRad-8ogexNL5NZgpoR0IwY'
     const sheetName = 'date_range_lookup_2'
+
+    createSheet(auth, spreadsheetId, sheetName)
+    
     const range = `${sheetName}!A1`
 
     // https://developers.google.com/sheets/api/reference/rest/v4/spreadsheets.values/update
