@@ -1,6 +1,10 @@
 const fs = require('fs');
 const readline = require('readline');
 const {google} = require('googleapis');
+//https://c2fo.io/fast-csv/docs/introduction/getting-started/
+const path = require('path');
+const csv = require('fast-csv');
+
 
 // If modifying these scopes, delete token.json.
 //const SCOPES = ['https://www.googleapis.com/auth/spreadsheets.readonly'];
@@ -10,14 +14,20 @@ const SCOPES = ['https://www.googleapis.com/auth/spreadsheets'];
 // time.
 const TOKEN_PATH = 'token.json';
 
+const CONFIRMED_CSV='/Users/lblackb/git/COVID-19/csse_covid_19_data/csse_covid_19_time_series/time_series_covid19_confirmed_global.csv'
+
+// COVID-19/csse_covid_19_data/csse_covid_19_time_series/time_series_covid19_recovered_global.csv
+// COVID-19/csse_covid_19_data/csse_covid_19_time_series/time_series_covid19_deaths_global.csv
+
 // Load client secrets from a local file.
 fs.readFile('credentials.json', (err, content) => {
     if (err) return console.log('Error loading client secret file:', err);
     // Authorize a client with credentials, then call the Google Sheets API.
     //authorize(JSON.parse(content), listPercentPopulation);
     //authorize(JSON.parse(content), addSheet);
-    authorize(JSON.parse(content), setCountries);
-    //authorize(JSON.parse(content), setDateRanges);
+    //authorize(JSON.parse(content), setCountries);
+    authorize(JSON.parse(content), setDateRanges);
+    authorize(JSON.parse(content), loadConfirmedGlobal);
 });
 
 /**
@@ -218,6 +228,32 @@ function addSheet(auth) {
     createSheet(auth, spreadsheetId, sheetName)
 }
 
+async function loadConfirmedGlobal(auth) {
+    const spreadsheetId = '1kCfWxRrL3lm3CgVDS5wYZRad-8ogexNL5NZgpoR0IwY'
+    const sheetName = 'confirmed_global'
+
+    await createSheet(auth, spreadsheetId, sheetName)
+
+    console.log(`CONFIRMED_CSV=[${CONFIRMED_CSV}]`)
+
+    var data = ['abc', 'xyz'];
+    console.log(`data.length=[${data.length}]`);
+
+    fs.createReadStream(path.resolve(__dirname, 'assets', CONFIRMED_CSV))
+     .pipe(csv.parse({ headers: true }))
+     .on('error', error => console.error(error))
+     .on('data', row => {
+	 data.push(row)
+	 console.log(row)
+	 console.log(`data.length=[${data.length}]`)
+     })
+     .on('end', rowCount => console.log(`Parsed ${rowCount} rows`))
+
+    console.log(`data.length=[${data.length}]`);
+    
+    const range = `${sheetName}!A1`
+}
+
 /**
  * Adds a sheet to a spreadsheet
  * @see https://docs.google.com/spreadsheets/d/1kCfWxRrL3lm3CgVDS5wYZRad-8ogexNL5NZgpoR0IwY/edit#gid=997476041
@@ -305,7 +341,7 @@ function setDateRanges(auth) {
 
     const deathTab = 'time_series_covid19_deaths_global.csv'
     const confirmedTab = 'time_series_covid19_confirmed_global'
-    const days = 90
+    const days = 120
     //const startDateString='2020-03-01 12:00:00 AM'
     //const startColumnNum = alphaToNum('AR')
     const startDateString='2020-01-22 12:00:00 AM'
