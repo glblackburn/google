@@ -1,0 +1,6 @@
+{
+    "dependencies": {
+        "fast-csv": "^1.0.2",
+        "googleapis": "39.2.0"
+    }
+}
