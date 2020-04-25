@@ -15,6 +15,11 @@ const SCOPES = ['https://www.googleapis.com/auth/spreadsheets'];
 const TOKEN_PATH = 'token.json';
 
 const CONFIRMED_CSV='/Users/lblackb/git/COVID-19/csse_covid_19_data/csse_covid_19_time_series/time_series_covid19_confirmed_global.csv'
+const DEATHS_CSV='/Users/lblackb/git/COVID-19/csse_covid_19_data/csse_covid_19_time_series/time_series_covid19_deaths_global.csv'
+
+const SPREADSHEET_ID = '1kCfWxRrL3lm3CgVDS5wYZRad-8ogexNL5NZgpoR0IwY'
+const CONFIRMED_SHEET_NAME = 'confirmed_global'
+const DEATHS_SHEET_NAME = 'deaths_global'
 
 // COVID-19/csse_covid_19_data/csse_covid_19_time_series/time_series_covid19_recovered_global.csv
 // COVID-19/csse_covid_19_data/csse_covid_19_time_series/time_series_covid19_deaths_global.csv
@@ -28,6 +33,7 @@ fs.readFile('credentials.json', (err, content) => {
     //authorize(JSON.parse(content), setCountries);
     authorize(JSON.parse(content), setDateRanges);
     authorize(JSON.parse(content), loadConfirmedGlobal);
+    authorize(JSON.parse(content), loadDeathsGlobal);
 });
 
 /**
@@ -228,30 +234,94 @@ function addSheet(auth) {
     createSheet(auth, spreadsheetId, sheetName)
 }
 
-async function loadConfirmedGlobal(auth) {
-    const spreadsheetId = '1kCfWxRrL3lm3CgVDS5wYZRad-8ogexNL5NZgpoR0IwY'
-    const sheetName = 'confirmed_global'
-
-    await createSheet(auth, spreadsheetId, sheetName)
-
-    console.log(`CONFIRMED_CSV=[${CONFIRMED_CSV}]`)
-
-    var data = ['abc', 'xyz'];
-    console.log(`data.length=[${data.length}]`);
-
-    fs.createReadStream(path.resolve(__dirname, 'assets', CONFIRMED_CSV))
-     .pipe(csv.parse({ headers: true }))
-     .on('error', error => console.error(error))
-     .on('data', row => {
-	 data.push(row)
-	 console.log(row)
-	 console.log(`data.length=[${data.length}]`)
-     })
-     .on('end', rowCount => console.log(`Parsed ${rowCount} rows`))
-
-    console.log(`data.length=[${data.length}]`);
-    
+function pushConfirmedGlobalToSheet(auth, spreadsheetId, sheetName, data) {
+    console.log(`pushConfirmedGlobalToSheet: data.length=[${data.length}]`);
+    for (i=0; i < data.length; i++) {
+	console.log(`pushConfirmedGlobalToSheet: i=[${i}] row=[${data[i]}]`)
+    }
     const range = `${sheetName}!A1`
+    const request = {
+	spreadsheetId: spreadsheetId,
+	"range": range,
+	valueInputOption: 'USER_ENTERED',
+	resource: {
+	    "range": range,
+	    "majorDimension": "ROWS",
+	    "values": data
+	},
+	auth: auth,
+    }
+
+    const sheets = google.sheets({version: 'v4', auth});
+    try {
+	const response = sheets.spreadsheets.values.update(request).data;
+	console.log(JSON.stringify(response, null, 2));
+    } catch (err) {
+	console.error(err);
+    }
+}
+
+async function loadConfirmedGlobal(auth) {
+    await createSheet(auth, SPREADSHEET_ID, CONFIRMED_SHEET_NAME)
+    console.log(`CONFIRMED_CSV=[${CONFIRMED_CSV}]`)
+    var data = [];
+    fs.createReadStream(path.resolve(__dirname, 'assets', CONFIRMED_CSV))
+	.pipe(csv.parse({ headers: false }))
+	.on('error', error => console.error(error))
+	.on('data', row => {
+	    data.push(row)
+	    console.log(row)
+	    console.log(`data.length=[${data.length}]`)
+	})
+	.on('end', rowCount => {
+	    console.log(`Parsed ${rowCount} rows`)
+	    pushConfirmedGlobalToSheet(auth, SPREADSHEET_ID, CONFIRMED_SHEET_NAME, data)
+	})
+}
+
+function pushDeathsGlobalToSheet(auth, spreadsheetId, sheetName, data) {
+    console.log(`pushDeathsGlobalToSheet: data.length=[${data.length}]`);
+    for (i=0; i < data.length; i++) {
+	console.log(`pushDeathsGlobalToSheet: i=[${i}] row=[${data[i]}]`)
+    }
+    const range = `${sheetName}!A1`
+    const request = {
+	spreadsheetId: spreadsheetId,
+	"range": range,
+	valueInputOption: 'USER_ENTERED',
+	resource: {
+	    "range": range,
+	    "majorDimension": "ROWS",
+	    "values": data
+	},
+	auth: auth,
+    }
+
+    const sheets = google.sheets({version: 'v4', auth});
+    try {
+	const response = sheets.spreadsheets.values.update(request).data;
+	console.log(JSON.stringify(response, null, 2));
+    } catch (err) {
+	console.error(err);
+    }
+}
+
+async function loadDeathsGlobal(auth) {
+    await createSheet(auth, SPREADSHEET_ID, DEATHS_SHEET_NAME)
+    console.log(`DEATHS_CSV=[${DEATHS_CSV}]`)
+    var data = [];
+    fs.createReadStream(path.resolve(__dirname, 'assets', DEATHS_CSV))
+	.pipe(csv.parse({ headers: false }))
+	.on('error', error => console.error(error))
+	.on('data', row => {
+	    data.push(row)
+	    console.log(row)
+	    console.log(`data.length=[${data.length}]`)
+	})
+	.on('end', rowCount => {
+	    console.log(`Parsed ${rowCount} rows`)
+	    pushDeathsGlobalToSheet(auth, SPREADSHEET_ID, DEATHS_SHEET_NAME, data)
+	})
 }
 
 /**
@@ -339,8 +409,8 @@ function setDateRanges(auth) {
     // https://developers.google.com/sheets/api/reference/rest/v4/spreadsheets.values/update
     // https://developers.google.com/sheets/api/reference/rest/v4/spreadsheets.values#ValueRange
 
-    const deathTab = 'time_series_covid19_deaths_global.csv'
-    const confirmedTab = 'time_series_covid19_confirmed_global'
+    const deathTab = DEATHS_SHEET_NAME
+    const confirmedTab = CONFIRMED_SHEET_NAME
     const days = 120
     //const startDateString='2020-03-01 12:00:00 AM'
     //const startColumnNum = alphaToNum('AR')
