@@ -21,8 +21,17 @@ const SPREADSHEET_ID = '1kCfWxRrL3lm3CgVDS5wYZRad-8ogexNL5NZgpoR0IwY'
 const CONFIRMED_SHEET_NAME = 'confirmed_global'
 const DEATHS_SHEET_NAME = 'deaths_global'
 
-// COVID-19/csse_covid_19_data/csse_covid_19_time_series/time_series_covid19_recovered_global.csv
-// COVID-19/csse_covid_19_data/csse_covid_19_time_series/time_series_covid19_deaths_global.csv
+const START_DATE = '2020-01-22'
+const COUNTRIES = [
+    'China',
+    'India',
+    'Iran',
+    'Italy',
+    'Spain',
+    'US',
+    'Germany',
+]
+//    'World',
 
 // Load client secrets from a local file.
 fs.readFile('credentials.json', (err, content) => {
@@ -31,9 +40,10 @@ fs.readFile('credentials.json', (err, content) => {
     //authorize(JSON.parse(content), listPercentPopulation);
     //authorize(JSON.parse(content), addSheet);
     //authorize(JSON.parse(content), setCountries);
-    authorize(JSON.parse(content), setDateRanges);
+    //authorize(JSON.parse(content), setDateRanges);
     authorize(JSON.parse(content), loadConfirmedGlobal);
     authorize(JSON.parse(content), loadDeathsGlobal);
+    authorize(JSON.parse(content), calculateDailyStatsByCountry);
 });
 
 /**
@@ -434,6 +444,96 @@ function setDateRanges(auth) {
 	// The A1 notation of the values to update.
 	"range": range,
 	// How the input data should be interpreted.
+	valueInputOption: 'USER_ENTERED',
+	resource: {
+	    "range": range,
+	    "majorDimension": "ROWS",
+	    "values": values
+	},
+	auth: auth,
+    }
+
+    const sheets = google.sheets({version: 'v4', auth});
+    try {
+	//const response = (await sheets.spreadsheets.values.update(request)).data;
+	const response = sheets.spreadsheets.values.update(request).data;
+	console.log(JSON.stringify(response, null, 2));
+    } catch (err) {
+	console.error(err);
+    }
+}
+
+/**
+ * Create sheet to cacluate the daily stats by country
+ * @param {google.auth.OAuth2} auth The authenticated Google OAuth client.
+ *
+ * TODO: calculate doubling date and rate.  Need to load infection data and sum by date/country and implement doubling date search.
+ * TODO: research setting number format
+ * https://developers.google.com/sheets/api/samples/formatting#set_a_custom_datetime_or_decimal_format_for_a_range
+ */
+async function calculateDailyStatsByCountry(auth) {
+    const spreadsheetId = '1kCfWxRrL3lm3CgVDS5wYZRad-8ogexNL5NZgpoR0IwY'
+    const sheetName = 'daily_stats_by_country'
+
+    await createSheet(auth, spreadsheetId, sheetName)
+
+    const values = []
+    const header = [
+	'date',
+	'contry',
+        'lookupkey',
+	'total infections',
+	'total deaths',
+	'US event',
+	'population',
+	'% population infected',
+	'% infected die',
+	'% population die',
+	'doubling date',
+	'doubled value',
+	'check',
+	'days',
+	'daily infected increase',
+	'daily death increase'
+    ]
+    values.push(header)
+
+    const startDateString=`${START_DATE} 12:00:00 AM`
+    date = new Date(startDateString)
+    today = new Date()
+    console.log('date', date);
+    console.log('today', today);
+    var rowNum = 1;
+    while (date <= today) {
+	dateString=(date.getUTCMonth()+1) + '-' + date.getUTCDate() + '-' + date.getUTCFullYear() 
+	COUNTRIES.forEach(function (country){
+	    rowNum++
+
+	    var usEvent = ''
+	    if (country == 'US') {
+		usEvent = `=vlookup(E${rowNum}, events, 2, true)`
+	    }
+	    var row = [
+		dateString,
+		country,
+		`=A${rowNum}&B${rowNum}`,
+		`=sumif(confirmed_global!$B:$B,B${rowNum},indirect(vlookup(A${rowNum},date_range_2,3,false)))`,
+		`=sumif(deaths_global!$B:$B,B${rowNum},indirect(vlookup(A${rowNum},date_range_2,2,false)))`,
+		usEvent,
+		`=VLOOKUP(B${rowNum},population_2020,2,false)`,
+		`=D${rowNum}/G${rowNum}`,
+		`=E${rowNum}/D${rowNum}`,
+		`=E${rowNum}/G${rowNum}`
+	    ]
+	    values.push(row)
+	});
+        date.setDate(date.getDate() + 1)
+    }
+
+    const range = `${sheetName}!A1`
+    const request = {
+	spreadsheetId: spreadsheetId,
+	"range": range,
 	valueInputOption: 'USER_ENTERED',
 	resource: {
 	    "range": range,
