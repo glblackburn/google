@@ -34,17 +34,19 @@ const COUNTRIES = [
 //    'World',
 
 // Load client secrets from a local file.
-fs.readFile('credentials.json', (err, content) => {
-    if (err) return console.log('Error loading client secret file:', err);
-    // Authorize a client with credentials, then call the Google Sheets API.
-    //authorize(JSON.parse(content), listPercentPopulation);
-    //authorize(JSON.parse(content), addSheet);
-    //authorize(JSON.parse(content), setCountries);
-    //authorize(JSON.parse(content), setDateRanges);
-    authorize(JSON.parse(content), loadConfirmedGlobal);
-    authorize(JSON.parse(content), loadDeathsGlobal);
-    authorize(JSON.parse(content), calculateDailyStatsByCountry);
-});
+//fs.readFile('credentials.json', (err, content) => {
+//    if (err) return console.log('Error loading client secret file:', err);
+//    // Authorize a client with credentials, then call the Google Sheets API.
+//    //authorize(JSON.parse(content), listPercentPopulation);
+//    //authorize(JSON.parse(content), addSheet);
+//    //authorize(JSON.parse(content), setCountries);
+//    //authorize(JSON.parse(content), setDateRanges);
+//    authorize(JSON.parse(content), loadConfirmedGlobalSheet);
+//    authorize(JSON.parse(content), loadDeathsGlobal);
+//    authorize(JSON.parse(content), calculateDailyStatsByCountry);
+//});
+
+loadConfirmedGlobal()
 
 /**
  * Create an OAuth2 client with the given credentials, and then execute the
@@ -271,7 +273,73 @@ function pushConfirmedGlobalToSheet(auth, spreadsheetId, sheetName, data) {
     }
 }
 
-async function loadConfirmedGlobal(auth) {
+var countryConfirmed;
+function addCountryDateConfirmed(country, date, count) {
+    if (!countryConfirmed) {
+	countryConfirmed = new Map()
+    }
+    var countryDates = countryConfirmed.get(country)
+    if (!countryDates) {
+	countryDates = new Map()
+	countryConfirmed.set(country, countryDates)
+    }
+    count = parseInt(count)
+    countryDateCount=countryDates.get(date)
+    if (countryDateCount) {
+	countryDateCount = parseInt(countryDateCount) + count
+    } else {
+	countryDateCount = count
+    }
+    countryDates.set(date, countryDateCount)
+    console.log(`addCountryDateConfirmed country=[${country}] date=[${date}] count=[${countryConfirmed.get(country).get(date)}]`)
+}
+
+function getCountryDateConfirmed(country, date) {
+    return countryConfirmed.get(country).get(date)
+}
+
+function testLoadConfirmedGlobal() {
+    console.log('loadConfirmedGlobal')
+    addCountryDateConfirmed('USA', '1/1/2020', 5)
+    addCountryDateConfirmed('USA', '1/1/2020', 2)
+    addCountryDateConfirmed('USA', '1/2/2020', 2)
+    addCountryDateConfirmed('USA', '1/2/2020', 3)
+
+    console.log( 'USA 1/1/2020', getCountryDateConfirmed('USA', '1/1/2020'))
+    console.log( 'USA 1/2/2020', getCountryDateConfirmed('USA', '1/2/2020'))
+}
+
+function loadCountryConfirmed(row) {
+    //console.log('loadCountryConfirmed', row)
+
+    date='4/27/20'
+    country=row['Country/Region']
+    count=row[date]
+    console.log(`loadCountryConfirmed: country=[${country}] date=[${date}] count=[${count}]`)
+    addCountryDateConfirmed(country, date, count)
+}
+
+async function loadConfirmedGlobal() {
+    await (fs.createReadStream(path.resolve(__dirname, 'assets', CONFIRMED_CSV))
+	.pipe(csv.parse({ headers: true }))
+	.on('error', error => console.error(error))
+	.on('data', row => loadCountryConfirmed(row))
+	.on('end', rowCount => {
+	    console.log(`Parsed ${rowCount} rows`)
+	    console.log( '1 ====== countryConfirmed', countryConfirmed)
+	    console.log( '1 ====== United Kingdom 4/27/20', getCountryDateConfirmed('United Kingdom', '4/27/20'))
+	    console.log( '1 ====== US 4/27/20', getCountryDateConfirmed('US', '4/27/20'))
+	}))
+
+    console.log( '2 ====== United Kingdom 4/27/20', getCountryDateConfirmed('United Kingdom', '4/27/20'))
+
+    for (i=0 ; i < 10 ; i++) {
+	var date = new Date()
+	console.log(date)
+    }
+}
+
+async function loadConfirmedGlobalSheet(auth) {
     await createSheet(auth, SPREADSHEET_ID, CONFIRMED_SHEET_NAME)
     console.log(`CONFIRMED_CSV=[${CONFIRMED_CSV}]`)
     var data = [];
