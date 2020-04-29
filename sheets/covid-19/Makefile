@@ -4,12 +4,26 @@ SHELL=/bin/bash
 
 default: help
 
+
+../../../COVID-19:
+	make clone_covid_data
+
+.PHONY:
+clone_covid_data: ## clone COVID-19 data from github.com
+	echo "git clone COVID-19 data from github.com"
+	cd ../../.. && git clone git@github.com:CSSEGISandData/COVID-19.git
+
+.PHONY:
+pull_covid_data: ../../../COVID-19 ## update COVID-19 data from github.com
+	echo "git pull COVID-19 data from github.com"
+	cd ../../../COVID-19 && git pull
+
 node_modules: package.json ## install nodejs libs
 	npm i
 	touch $@
 
 .PHONY:
-node: node_modules
+node: ../../../COVID-19 node_modules ## run the node app
 	node .
 
 .PHONY: clean
