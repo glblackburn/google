@@ -14,8 +14,10 @@ const SCOPES = ['https://www.googleapis.com/auth/spreadsheets'];
 // time.
 const TOKEN_PATH = 'token.json';
 
-const CONFIRMED_CSV='/Users/lblackb/git/COVID-19/csse_covid_19_data/csse_covid_19_time_series/time_series_covid19_confirmed_global.csv'
-const DEATHS_CSV='/Users/lblackb/git/COVID-19/csse_covid_19_data/csse_covid_19_time_series/time_series_covid19_deaths_global.csv'
+const CONFIRMED_CSV='../../../COVID-19/csse_covid_19_data/csse_covid_19_time_series/time_series_covid19_confirmed_global.csv'
+console.log(`CONFIRMED_CSV=[${CONFIRMED_CSV}]`)
+console.log(path.resolve(__dirname, CONFIRMED_CSV))
+const DEATHS_CSV='../../../COVID-19/csse_covid_19_data/csse_covid_19_time_series/time_series_covid19_deaths_global.csv'
 
 const SPREADSHEET_ID = '1kCfWxRrL3lm3CgVDS5wYZRad-8ogexNL5NZgpoR0IwY'
 const CONFIRMED_SHEET_NAME = 'confirmed_global'
@@ -320,7 +322,7 @@ function loadCountryConfirmed(row) {
 }
 
 async function loadConfirmedGlobal() {
-    await (fs.createReadStream(path.resolve(__dirname, 'assets', CONFIRMED_CSV))
+    await (fs.createReadStream(path.resolve(__dirname, CONFIRMED_CSV))
 	.pipe(csv.parse({ headers: true }))
 	.on('error', error => console.error(error))
 	.on('data', row => loadCountryConfirmed(row))
@@ -343,7 +345,7 @@ async function loadConfirmedGlobalSheet(auth) {
     await createSheet(auth, SPREADSHEET_ID, CONFIRMED_SHEET_NAME)
     console.log(`CONFIRMED_CSV=[${CONFIRMED_CSV}]`)
     var data = [];
-    fs.createReadStream(path.resolve(__dirname, 'assets', CONFIRMED_CSV))
+    fs.createReadStream(path.resolve(__dirname, CONFIRMED_CSV))
 	.pipe(csv.parse({ headers: false }))
 	.on('error', error => console.error(error))
 	.on('data', row => {
@@ -388,7 +390,7 @@ async function loadDeathsGlobal(auth) {
     await createSheet(auth, SPREADSHEET_ID, DEATHS_SHEET_NAME)
     console.log(`DEATHS_CSV=[${DEATHS_CSV}]`)
     var data = [];
-    fs.createReadStream(path.resolve(__dirname, 'assets', DEATHS_CSV))
+    fs.createReadStream(path.resolve(__dirname, DEATHS_CSV))
 	.pipe(csv.parse({ headers: false }))
 	.on('error', error => console.error(error))
 	.on('data', row => {
