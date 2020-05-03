@@ -36,19 +36,20 @@ const COUNTRIES = [
 //    'World',
 
 // Load client secrets from a local file.
-//fs.readFile('credentials.json', (err, content) => {
-//    if (err) return console.log('Error loading client secret file:', err);
-//    // Authorize a client with credentials, then call the Google Sheets API.
-//    //authorize(JSON.parse(content), listPercentPopulation);
-//    //authorize(JSON.parse(content), addSheet);
-//    //authorize(JSON.parse(content), setCountries);
-//    //authorize(JSON.parse(content), setDateRanges);
+fs.readFile('credentials.json', (err, content) => {
+    if (err) return console.log('Error loading client secret file:', err);
+    // Authorize a client with credentials, then call the Google Sheets API.
+    //authorize(JSON.parse(content), listPercentPopulation);
+    //authorize(JSON.parse(content), addSheet);
+    //authorize(JSON.parse(content), setCountries);
+    //authorize(JSON.parse(content), setDateRanges);
+
 //    authorize(JSON.parse(content), loadConfirmedGlobalSheet);
 //    authorize(JSON.parse(content), loadDeathsGlobal);
 //    authorize(JSON.parse(content), calculateDailyStatsByCountry);
-//});
+});
 
-loadConfirmedGlobal()
+loadConfirmedGlobalLookup( loadConfirmedGlobal )
 
 /**
  * Create an OAuth2 client with the given credentials, and then execute the
@@ -293,11 +294,14 @@ function addCountryDateConfirmed(country, date, count) {
 	countryDateCount = count
     }
     countryDates.set(date, countryDateCount)
-    console.log(`addCountryDateConfirmed country=[${country}] date=[${date}] count=[${countryConfirmed.get(country).get(date)}]`)
+    //console.log(`addCountryDateConfirmed country=[${country}] date=[${date}] count=[${countryConfirmed.get(country).get(date)}]`)
 }
 
 function getCountryDateConfirmed(country, date) {
-    return countryConfirmed.get(country).get(date)
+    console.log(`getCountryDateConfirmed: country=[${country}], date=[${date}]`)
+    result = countryConfirmed.get(country).get(date)
+    console.log(`getCountryDateConfirmed: country=[${country}], date=[${date}] result=[${result}]`)
+    return result
 }
 
 function testLoadConfirmedGlobal() {
@@ -314,31 +318,51 @@ function testLoadConfirmedGlobal() {
 function loadCountryConfirmed(row) {
     //console.log('loadCountryConfirmed', row)
 
-    date='4/27/20'
-    country=row['Country/Region']
-    count=row[date]
-    console.log(`loadCountryConfirmed: country=[${country}] date=[${date}] count=[${count}]`)
-    addCountryDateConfirmed(country, date, count)
+    //var dateString = '4/27/20'
+    //var count = row[dateString]
+    //console.log(`loadCountryConfirmed: country=[${country}] date=[${dateString}] count=[${count}]`)
+    //addCountryDateConfirmed(country, dateString, count)
+
+    var country = row['Country/Region']
+    today = new Date()
+
+    const minDateString = `${START_DATE} 12:00:00 AM`
+    const minDate = new Date(minDateString)
+    var date = new Date()
+    date.setDate(today.getDate())
+
+    while (date >= minDate) {
+	var dateString=getLookupDateString(date)
+	var count=row[dateString]
+	addCountryDateConfirmed(country, dateString, count)
+	date.setDate(date.getDate() - 1)
+    }
 }
 
-async function loadConfirmedGlobal() {
-    await (fs.createReadStream(path.resolve(__dirname, CONFIRMED_CSV))
+function loadConfirmedGlobalLookup( callback ) {
+    fs.createReadStream(path.resolve(__dirname, CONFIRMED_CSV))
 	.pipe(csv.parse({ headers: true }))
 	.on('error', error => console.error(error))
 	.on('data', row => loadCountryConfirmed(row))
 	.on('end', rowCount => {
 	    console.log(`Parsed ${rowCount} rows`)
-	    console.log( '1 ====== countryConfirmed', countryConfirmed)
-	    console.log( '1 ====== United Kingdom 4/27/20', getCountryDateConfirmed('United Kingdom', '4/27/20'))
-	    console.log( '1 ====== US 4/27/20', getCountryDateConfirmed('US', '4/27/20'))
-	}))
+	    //console.log( '1 ====== countryConfirmed', countryConfirmed)
+	    //console.log( '2 ====== United Kingdom 4/27/20', getCountryDateConfirmed('United Kingdom', '4/27/20'))
+	    //console.log( '3 ====== US 4/27/20', getCountryDateConfirmed('US', '4/27/20'))
+	    //console.log( `3 ====== ${new Date()}`)
+	    callback()
+	})
+}
 
-    console.log( '2 ====== United Kingdom 4/27/20', getCountryDateConfirmed('United Kingdom', '4/27/20'))
+async function loadConfirmedGlobal() {
+    // Load client secrets from a local file.
+    fs.readFile('credentials.json', (err, content) => {
+	if (err) return console.log('Error loading client secret file:', err);
+	// Authorize a client with credentials, then call the Google Sheets API.
+	authorize(JSON.parse(content), calculateDailyStatsByCountry);
+    });
 
-    for (i=0 ; i < 10 ; i++) {
-	var date = new Date()
-	console.log(date)
-    }
+    //const result = loadConfirmedGlobalLookup()
 }
 
 async function loadConfirmedGlobalSheet(auth) {
@@ -533,6 +557,31 @@ function setDateRanges(auth) {
     }
 }
 
+function getLookupDateString(date) {
+    return (date.getUTCMonth()+1) + '/' + date.getUTCDate() + '/' + (date.getUTCFullYear()).toString().substring(2,4) 
+}
+
+function findDoubledDate( country, maxDate, minDate ) {
+    console.log(`findDoubledDate: country=[${country}], maxDate=[${maxDate}], minDate=[${minDate}]`)
+    
+    const maxCount = getCountryDateConfirmed(country, getLookupDateString(maxDate))
+    var lastDateString = 0;
+
+    var date = new Date(maxDate)
+    var dateString
+    while (date >= minDate) {
+	date.setDate(date.getDate() - 1)
+	var dateString = getLookupDateString(date)
+	var count = getCountryDateConfirmed(country, dateString)
+	if (count !=0 && (maxCount / count) > 2) {
+	    break
+	}
+	lastDateString = dateString
+    }
+    return lastDateString
+}
+
+
 /**
  * Create sheet to cacluate the daily stats by country
  * @param {google.auth.OAuth2} auth The authenticated Google OAuth client.
@@ -542,6 +591,15 @@ function setDateRanges(auth) {
  * https://developers.google.com/sheets/api/samples/formatting#set_a_custom_datetime_or_decimal_format_for_a_range
  */
 async function calculateDailyStatsByCountry(auth) {
+
+    //const startDateString=`${START_DATE} 12:00:00 AM`
+    //startDate = new Date(startDateString)
+    //var date = new Date()
+    //date.setDate(date.getDate()-1)
+    //console.log(findDoubledDate('US', date, startDate))
+    //console.log('==== break out')
+    //return
+
     const spreadsheetId = '1kCfWxRrL3lm3CgVDS5wYZRad-8ogexNL5NZgpoR0IwY'
     const sheetName = 'daily_stats_by_country'
 
@@ -569,10 +627,13 @@ async function calculateDailyStatsByCountry(auth) {
     values.push(header)
 
     const startDateString=`${START_DATE} 12:00:00 AM`
-    date = new Date(startDateString)
+    startDate = new Date(startDateString)
+    var date = new Date(startDateString)
+
     today = new Date()
-    console.log('date', date);
-    console.log('today', today);
+    console.log('calculateDailyStatsByCountry: startDate', startDate);
+    console.log('calculateDailyStatsByCountry: date', date);
+    console.log('calculateDailyStatsByCountry: today', today);
     var rowNum = 1;
     while (date <= today) {
 	dateString=(date.getUTCMonth()+1) + '-' + date.getUTCDate() + '-' + date.getUTCFullYear() 
@@ -593,10 +654,14 @@ async function calculateDailyStatsByCountry(auth) {
 		`=VLOOKUP(B${rowNum},population_2020,2,false)`,
 		`=D${rowNum}/G${rowNum}`,
 		`=E${rowNum}/D${rowNum}`,
-		`=E${rowNum}/G${rowNum}`
+		`=E${rowNum}/G${rowNum}`,
+		findDoubledDate(country, date, startDate),
+		`=vlookup(K${rowNum}&B${rowNum},C:E,2,false)`,
+		`=round(D${rowNum}/L${rowNum},3)`
 	    ]
 	    values.push(row)
 	});
+	console.log('calculateDailyStatsByCountry: date', date);
         date.setDate(date.getDate() + 1)
     }
 
