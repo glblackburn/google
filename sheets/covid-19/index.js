@@ -44,9 +44,11 @@ fs.readFile('credentials.json', (err, content) => {
     //authorize(JSON.parse(content), setCountries);
     //authorize(JSON.parse(content), setDateRanges);
 
-//    authorize(JSON.parse(content), loadConfirmedGlobalSheet);
-//    authorize(JSON.parse(content), loadDeathsGlobal);
-//    authorize(JSON.parse(content), calculateDailyStatsByCountry);
+    authorize(JSON.parse(content), loadConfirmedGlobalSheet);
+    authorize(JSON.parse(content), loadDeathsGlobalSheet);
+
+    //this is not used now.  replaced by 'loadConfirmedGlobalLookup( loadConfirmedGlobal )' below
+    //authorize(JSON.parse(content), calculateDailyStatsByCountry);
 });
 
 loadConfirmedGlobalLookup( loadConfirmedGlobal )
@@ -339,8 +341,8 @@ function loadCountryConfirmed(row) {
     }
 }
 
-function loadConfirmedGlobalLookup( callback ) {
-    fs.createReadStream(path.resolve(__dirname, CONFIRMED_CSV))
+async function loadConfirmedGlobalLookup( callback ) {
+    await fs.createReadStream(path.resolve(__dirname, CONFIRMED_CSV))
 	.pipe(csv.parse({ headers: true }))
 	.on('error', error => console.error(error))
 	.on('data', row => loadCountryConfirmed(row))
@@ -352,6 +354,11 @@ function loadConfirmedGlobalLookup( callback ) {
 	    //console.log( `3 ====== ${new Date()}`)
 	    callback()
 	})
+
+    // TODO: this does not work.  executes before call above completes.
+    // throws error because getCountryDateConfirmed is not safe before
+    // initalizing with first call to addCountryDateConfirmed.
+    console.log( '3 ====== US 4/27/20', getCountryDateConfirmed('US', '4/27/20'))
 }
 
 async function loadConfirmedGlobal() {
@@ -366,6 +373,7 @@ async function loadConfirmedGlobal() {
 }
 
 async function loadConfirmedGlobalSheet(auth) {
+    //this await does not seem to block the next calls so the google sheets api call fails the first time.
     await createSheet(auth, SPREADSHEET_ID, CONFIRMED_SHEET_NAME)
     console.log(`CONFIRMED_CSV=[${CONFIRMED_CSV}]`)
     var data = [];
@@ -410,7 +418,7 @@ function pushDeathsGlobalToSheet(auth, spreadsheetId, sheetName, data) {
     }
 }
 
-async function loadDeathsGlobal(auth) {
+async function loadDeathsGlobalSheet(auth) {
     await createSheet(auth, SPREADSHEET_ID, DEATHS_SHEET_NAME)
     console.log(`DEATHS_CSV=[${DEATHS_CSV}]`)
     var data = [];
