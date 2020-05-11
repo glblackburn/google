@@ -358,7 +358,7 @@ async function loadConfirmedGlobalLookup( callback ) {
     // TODO: this does not work.  executes before call above completes.
     // throws error because getCountryDateConfirmed is not safe before
     // initalizing with first call to addCountryDateConfirmed.
-    console.log( '3 ====== US 4/27/20', getCountryDateConfirmed('US', '4/27/20'))
+    //console.log( '3 ====== US 4/27/20', getCountryDateConfirmed('US', '4/27/20'))
 }
 
 async function loadConfirmedGlobal() {
@@ -665,7 +665,8 @@ async function calculateDailyStatsByCountry(auth) {
 		`=E${rowNum}/G${rowNum}`,
 		findDoubledDate(country, date, startDate),
 		`=vlookup(K${rowNum}&B${rowNum},C:E,2,false)`,
-		`=round(D${rowNum}/L${rowNum},3)`
+		`=round(D${rowNum}/L${rowNum},3)`,
+		`=A${rowNum}-K${rowNum}`
 	    ]
 	    values.push(row)
 	});
