@@ -4,7 +4,7 @@ const {google} = require('googleapis');
 //https://c2fo.io/fast-csv/docs/introduction/getting-started/
 const path = require('path');
 const csv = require('fast-csv');
-
+const config = require('./config');
 
 // If modifying these scopes, delete token.json.
 //const SCOPES = ['https://www.googleapis.com/auth/spreadsheets.readonly'];
@@ -19,7 +19,7 @@ console.log(`CONFIRMED_CSV=[${CONFIRMED_CSV}]`)
 console.log(path.resolve(__dirname, CONFIRMED_CSV))
 const DEATHS_CSV='../../../COVID-19/csse_covid_19_data/csse_covid_19_time_series/time_series_covid19_deaths_global.csv'
 
-const SPREADSHEET_ID = '1kCfWxRrL3lm3CgVDS5wYZRad-8ogexNL5NZgpoR0IwY'
+const SPREADSHEET_ID = config.spreadsheetId
 const CONFIRMED_SHEET_NAME = 'confirmed_global'
 const DEATHS_SHEET_NAME = 'deaths_global'
 
@@ -103,42 +103,15 @@ function getNewToken(oAuth2Client, callback) {
 }
 
 /**
- * Prints the names and majors of students in a sample spreadsheet:
- * @see https://docs.google.com/spreadsheets/d/1BxiMVs0XRA5nFMdKvBdBZjgmUUqptlbs74OgvE2upms/edit
- * @param {google.auth.OAuth2} auth The authenticated Google OAuth client.
- */
-function listMajors(auth) {
-    const sheets = google.sheets({version: 'v4', auth});
-    sheets.spreadsheets.values.get({
-	spreadsheetId: '1BxiMVs0XRA5nFMdKvBdBZjgmUUqptlbs74OgvE2upms',
-	range: 'Class Data!A2:E',
-    }, (err, res) => {
-	if (err) return console.log('The API returned an error: ' + err);
-	const rows = res.data.values;
-	if (rows.length) {
-	    console.log('Name, Major:');
-	    // Print columns A and E, which correspond to indices 0 and 4.
-	    rows.map((row) => {
-		console.log(`${row[0]}, ${row[4]}`);
-	    });
-	} else {
-	    console.log('No data found.');
-	}
-    });
-}
-
-/**
  * Prints the percent population sheet
- * @see https://docs.google.com/spreadsheets/d/1kCfWxRrL3lm3CgVDS5wYZRad-8ogexNL5NZgpoR0IwY/edit#gid=997476041
  * @param {google.auth.OAuth2} auth The authenticated Google OAuth client.
  */
 function listPercentPopulation(auth) {
-    const spreadsheetId = '1kCfWxRrL3lm3CgVDS5wYZRad-8ogexNL5NZgpoR0IwY'
     const range = 'percent population!A2:E'
     
     const sheets = google.sheets({version: 'v4', auth});
     sheets.spreadsheets.values.get({
-	spreadsheetId: spreadsheetId,
+	spreadsheetId: SPREADSHEET_ID,
 	range: range,
     }, (err, res) => {
 	if (err) return console.log('The API returned an error: ' + err);
@@ -241,14 +214,12 @@ async function createSheet(auth, spreadsheetId, sheetName) {
 
 /**
  * Adds a sheet to a spreadsheet
- * @see https://docs.google.com/spreadsheets/d/1kCfWxRrL3lm3CgVDS5wYZRad-8ogexNL5NZgpoR0IwY/edit#gid=997476041
  * @param {google.auth.OAuth2} auth The authenticated Google OAuth client.
  */
 function addSheet(auth) {
-    const spreadsheetId = '1kCfWxRrL3lm3CgVDS5wYZRad-8ogexNL5NZgpoR0IwY'
     const sheetName = 'test sheet'
 
-    createSheet(auth, spreadsheetId, sheetName)
+    createSheet(auth, SPREADSHEET_ID, sheetName)
 }
 
 function pushConfirmedGlobalToSheet(auth, spreadsheetId, sheetName, data) {
@@ -438,14 +409,12 @@ async function loadDeathsGlobalSheet(auth) {
 
 /**
  * Adds a sheet to a spreadsheet
- * @see https://docs.google.com/spreadsheets/d/1kCfWxRrL3lm3CgVDS5wYZRad-8ogexNL5NZgpoR0IwY/edit#gid=997476041
  * @param {google.auth.OAuth2} auth The authenticated Google OAuth client.
  */
 async function setCountries(auth) {
-    const spreadsheetId = '1kCfWxRrL3lm3CgVDS5wYZRad-8ogexNL5NZgpoR0IwY'
     const sheetName = 'test sheet'
 
-    await createSheet(auth, spreadsheetId, sheetName)
+    await createSheet(auth, SPREADSHEET_ID, sheetName)
 
     const range = `${sheetName}!A1`
 
@@ -454,7 +423,7 @@ async function setCountries(auth) {
 
     const request = {
 	// The ID of the spreadsheet to update.
-	spreadsheetId: spreadsheetId,
+	spreadsheetId: SPREADSHEET_ID,
 	// The A1 notation of the values to update.
 	"range": range,
 	// How the input data should be interpreted.
@@ -511,10 +480,9 @@ function alphaToNum(alpha) {
  * @param {google.auth.OAuth2} auth The authenticated Google OAuth client.
  */
 function setDateRanges(auth) {
-    const spreadsheetId = '1kCfWxRrL3lm3CgVDS5wYZRad-8ogexNL5NZgpoR0IwY'
     const sheetName = 'date_range_lookup_2'
 
-    createSheet(auth, spreadsheetId, sheetName)
+    createSheet(auth, SPREADSHEET_ID, sheetName)
     
     const range = `${sheetName}!A1`
 
@@ -608,10 +576,9 @@ async function calculateDailyStatsByCountry(auth) {
     //console.log('==== break out')
     //return
 
-    const spreadsheetId = '1kCfWxRrL3lm3CgVDS5wYZRad-8ogexNL5NZgpoR0IwY'
     const sheetName = 'daily_stats_by_country'
 
-    await createSheet(auth, spreadsheetId, sheetName)
+    await createSheet(auth, SPREADSHEET_ID, sheetName)
 
     const values = []
     const header = [
@@ -676,7 +643,7 @@ async function calculateDailyStatsByCountry(auth) {
 
     const range = `${sheetName}!A1`
     const request = {
-	spreadsheetId: spreadsheetId,
+	spreadsheetId: SPREADSHEET_ID,
 	"range": range,
 	valueInputOption: 'USER_ENTERED',
 	resource: {
