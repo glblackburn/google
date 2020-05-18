@@ -24,16 +24,18 @@ const CONFIRMED_SHEET_NAME = 'confirmed_global'
 const DEATHS_SHEET_NAME = 'deaths_global'
 
 const START_DATE = '2020-01-22'
+const WORLD = 'World'
 const COUNTRIES = [
     'China',
+    'Germany',
     'India',
     'Iran',
     'Italy',
     'Spain',
+    'Sweden',
     'US',
-    'Germany',
+    WORLD,
 ]
-//    'World',
 
 // Load client secrets from a local file.
 fs.readFile('credentials.json', (err, content) => {
@@ -52,6 +54,12 @@ fs.readFile('credentials.json', (err, content) => {
 });
 
 loadConfirmedGlobalLookup( loadConfirmedGlobal )
+
+
+function debug(message) {
+    //console.log(message)
+}
+
 
 /**
  * Create an OAuth2 client with the given credentials, and then execute the
@@ -129,7 +137,7 @@ function listPercentPopulation(auth) {
 }
 
 async function sheetExists(auth, spreadsheetId, sheetName) {
-    console.log(`sheetExists: spreadsheetId=[${spreadsheetId}] sheetName=[${sheetName}]`)
+    debug(`sheetExists: spreadsheetId=[${spreadsheetId}] sheetName=[${sheetName}]`)
 
     const sheets = google.sheets({version: 'v4', auth});
     const request = {
@@ -143,12 +151,8 @@ async function sheetExists(auth, spreadsheetId, sheetName) {
     let found=false;
     try {
 	const response = (await sheets.spreadsheets.get(request)).data;
-	//console.log(response);
-	//console.log('================================================================================');
-	//console.log(JSON.stringify(response, null, 2));
-	//console.log('================================================================================');
 	//TODO: work out how to use forEach instead of loop
-	response.sheets.forEach(element => console.log(element.properties.title))
+	//response.sheets.forEach(element => console.log(element.properties.title))
 	for (i=0 ; i<response.sheets.length ; i++) {
 	    if (sheetName == response.sheets[i].properties.title) {
 		found = true
@@ -158,7 +162,7 @@ async function sheetExists(auth, spreadsheetId, sheetName) {
 	console.error(err);
     }
     
-    console.log(`sheetExists: found=[${found}]`)
+    debug(`sheetExists: found=[${found}]`)
     return found;
 }
 
@@ -169,15 +173,15 @@ async function sheetExists(auth, spreadsheetId, sheetName) {
  * @param {string} sheet name to create.
  */
 async function createSheet(auth, spreadsheetId, sheetName) {
-    console.log(`createSheet: spreadsheetId=[${spreadsheetId}] sheetName=[${sheetName}]`)
+    debug(`createSheet: spreadsheetId=[${spreadsheetId}] sheetName=[${sheetName}]`)
 
     const sheets = google.sheets({version: 'v4', auth});
 
     //return if sheet already exists
     if (await sheetExists(auth, spreadsheetId, sheetName)) {
-	return console.log('createSheet: sheet already exists');
+	return debug('createSheet: sheet already exists');
     }
-    console.log('createSheet: sheet does not exists. creating...');
+    debug('createSheet: sheet does not exists. creating...');
     //if the sheet does not exist add the sheet.
     let requests = [];
     // Change the spreadsheet's title.
@@ -197,7 +201,7 @@ async function createSheet(auth, spreadsheetId, sheetName) {
 	    }
 	}
     })
-    console.log(requests);
+    debug(requests);
     // Add additional requests (operations) ...
     const batchUpdateRequest = {requests};
 
@@ -207,9 +211,9 @@ async function createSheet(auth, spreadsheetId, sheetName) {
 	resource: batchUpdateRequest,
     }, (err, res) => {
 	if (err) return console.log('createSheet: The API returned an error: ' + err);
-	console.log(res);
+	debug(res);
     });
-    return console.log('createSheet: sheet created');
+    return debug('createSheet: sheet created');
 }
 
 /**
@@ -223,9 +227,9 @@ function addSheet(auth) {
 }
 
 function pushConfirmedGlobalToSheet(auth, spreadsheetId, sheetName, data) {
-    console.log(`pushConfirmedGlobalToSheet: data.length=[${data.length}]`);
+    debug(`pushConfirmedGlobalToSheet: data.length=[${data.length}]`);
     for (i=0; i < data.length; i++) {
-	console.log(`pushConfirmedGlobalToSheet: i=[${i}] row=[${data[i]}]`)
+	debug(`pushConfirmedGlobalToSheet: i=[${i}] row=[${data[i]}]`)
     }
     const range = `${sheetName}!A1`
     const request = {
@@ -243,7 +247,7 @@ function pushConfirmedGlobalToSheet(auth, spreadsheetId, sheetName, data) {
     const sheets = google.sheets({version: 'v4', auth});
     try {
 	const response = sheets.spreadsheets.values.update(request).data;
-	console.log(JSON.stringify(response, null, 2));
+	debug(JSON.stringify(response, null, 2));
     } catch (err) {
 	console.error(err);
     }
@@ -267,13 +271,13 @@ function addCountryDateConfirmed(country, date, count) {
 	countryDateCount = count
     }
     countryDates.set(date, countryDateCount)
-    //console.log(`addCountryDateConfirmed country=[${country}] date=[${date}] count=[${countryConfirmed.get(country).get(date)}]`)
+    //debug(`addCountryDateConfirmed country=[${country}] date=[${date}] count=[${countryConfirmed.get(country).get(date)}]`)
 }
 
 function getCountryDateConfirmed(country, date) {
-    console.log(`getCountryDateConfirmed: country=[${country}], date=[${date}]`)
+    debug(`getCountryDateConfirmed: country=[${country}], date=[${date}]`)
     result = countryConfirmed.get(country).get(date)
-    console.log(`getCountryDateConfirmed: country=[${country}], date=[${date}] result=[${result}]`)
+    debug(`getCountryDateConfirmed: country=[${country}], date=[${date}] result=[${result}]`)
     return result
 }
 
@@ -289,12 +293,7 @@ function testLoadConfirmedGlobal() {
 }
 
 function loadCountryConfirmed(row) {
-    //console.log('loadCountryConfirmed', row)
-
-    //var dateString = '4/27/20'
-    //var count = row[dateString]
-    //console.log(`loadCountryConfirmed: country=[${country}] date=[${dateString}] count=[${count}]`)
-    //addCountryDateConfirmed(country, dateString, count)
+    //debug('loadCountryConfirmed', row)
 
     var country = row['Country/Region']
     today = new Date()
@@ -308,6 +307,7 @@ function loadCountryConfirmed(row) {
 	var dateString=getLookupDateString(date)
 	var count=row[dateString]
 	addCountryDateConfirmed(country, dateString, count)
+	addCountryDateConfirmed(WORLD, dateString, count)
 	date.setDate(date.getDate() - 1)
     }
 }
@@ -318,18 +318,18 @@ async function loadConfirmedGlobalLookup( callback ) {
 	.on('error', error => console.error(error))
 	.on('data', row => loadCountryConfirmed(row))
 	.on('end', rowCount => {
-	    console.log(`Parsed ${rowCount} rows`)
-	    //console.log( '1 ====== countryConfirmed', countryConfirmed)
-	    //console.log( '2 ====== United Kingdom 4/27/20', getCountryDateConfirmed('United Kingdom', '4/27/20'))
-	    //console.log( '3 ====== US 4/27/20', getCountryDateConfirmed('US', '4/27/20'))
-	    //console.log( `3 ====== ${new Date()}`)
+	    debug(`Parsed ${rowCount} rows`)
+	    //debug( '1 ====== countryConfirmed', countryConfirmed)
+	    //debug( '2 ====== United Kingdom 4/27/20', getCountryDateConfirmed('United Kingdom', '4/27/20'))
+	    //debug( '3 ====== US 4/27/20', getCountryDateConfirmed('US', '4/27/20'))
+	    //debug( `3 ====== ${new Date()}`)
 	    callback()
 	})
 
     // TODO: this does not work.  executes before call above completes.
     // throws error because getCountryDateConfirmed is not safe before
     // initalizing with first call to addCountryDateConfirmed.
-    //console.log( '3 ====== US 4/27/20', getCountryDateConfirmed('US', '4/27/20'))
+    //debug( '3 ====== US 4/27/20', getCountryDateConfirmed('US', '4/27/20'))
 }
 
 async function loadConfirmedGlobal() {
@@ -346,26 +346,26 @@ async function loadConfirmedGlobal() {
 async function loadConfirmedGlobalSheet(auth) {
     //this await does not seem to block the next calls so the google sheets api call fails the first time.
     await createSheet(auth, SPREADSHEET_ID, CONFIRMED_SHEET_NAME)
-    console.log(`CONFIRMED_CSV=[${CONFIRMED_CSV}]`)
+    debug(`CONFIRMED_CSV=[${CONFIRMED_CSV}]`)
     var data = [];
     fs.createReadStream(path.resolve(__dirname, CONFIRMED_CSV))
 	.pipe(csv.parse({ headers: false }))
 	.on('error', error => console.error(error))
 	.on('data', row => {
 	    data.push(row)
-	    console.log(row)
-	    console.log(`data.length=[${data.length}]`)
+	    debug(row)
+	    debug(`data.length=[${data.length}]`)
 	})
 	.on('end', rowCount => {
-	    console.log(`Parsed ${rowCount} rows`)
+	    debug(`Parsed ${rowCount} rows`)
 	    pushConfirmedGlobalToSheet(auth, SPREADSHEET_ID, CONFIRMED_SHEET_NAME, data)
 	})
 }
 
 function pushDeathsGlobalToSheet(auth, spreadsheetId, sheetName, data) {
-    console.log(`pushDeathsGlobalToSheet: data.length=[${data.length}]`);
+    debug(`pushDeathsGlobalToSheet: data.length=[${data.length}]`);
     for (i=0; i < data.length; i++) {
-	console.log(`pushDeathsGlobalToSheet: i=[${i}] row=[${data[i]}]`)
+	debug(`pushDeathsGlobalToSheet: i=[${i}] row=[${data[i]}]`)
     }
     const range = `${sheetName}!A1`
     const request = {
@@ -383,7 +383,7 @@ function pushDeathsGlobalToSheet(auth, spreadsheetId, sheetName, data) {
     const sheets = google.sheets({version: 'v4', auth});
     try {
 	const response = sheets.spreadsheets.values.update(request).data;
-	console.log(JSON.stringify(response, null, 2));
+	debug(JSON.stringify(response, null, 2));
     } catch (err) {
 	console.error(err);
     }
@@ -391,18 +391,18 @@ function pushDeathsGlobalToSheet(auth, spreadsheetId, sheetName, data) {
 
 async function loadDeathsGlobalSheet(auth) {
     await createSheet(auth, SPREADSHEET_ID, DEATHS_SHEET_NAME)
-    console.log(`DEATHS_CSV=[${DEATHS_CSV}]`)
+    debug(`DEATHS_CSV=[${DEATHS_CSV}]`)
     var data = [];
     fs.createReadStream(path.resolve(__dirname, DEATHS_CSV))
 	.pipe(csv.parse({ headers: false }))
 	.on('error', error => console.error(error))
 	.on('data', row => {
 	    data.push(row)
-	    console.log(row)
-	    console.log(`data.length=[${data.length}]`)
+	    debug(row)
+	    debug(`data.length=[${data.length}]`)
 	})
 	.on('end', rowCount => {
-	    console.log(`Parsed ${rowCount} rows`)
+	    debug(`Parsed ${rowCount} rows`)
 	    pushDeathsGlobalToSheet(auth, SPREADSHEET_ID, DEATHS_SHEET_NAME, data)
 	})
 }
@@ -450,7 +450,7 @@ async function setCountries(auth) {
 	const response = (await sheets.spreadsheets.values.update(request)).data;
 	//const response = sheets.spreadsheets.values.update(request).data;
 	// TODO: Change code below to process the `response` object:
-	console.log(JSON.stringify(response, null, 2));
+	debug(JSON.stringify(response, null, 2));
     } catch (err) {
 	console.error(err);
     }
@@ -527,7 +527,7 @@ function setDateRanges(auth) {
     try {
 	//const response = (await sheets.spreadsheets.values.update(request)).data;
 	const response = sheets.spreadsheets.values.update(request).data;
-	console.log(JSON.stringify(response, null, 2));
+	debug(JSON.stringify(response, null, 2));
     } catch (err) {
 	console.error(err);
     }
@@ -538,7 +538,7 @@ function getLookupDateString(date) {
 }
 
 function findDoubledDate( country, maxDate, minDate ) {
-    console.log(`findDoubledDate: country=[${country}], maxDate=[${maxDate}], minDate=[${minDate}]`)
+    debug(`findDoubledDate: country=[${country}], maxDate=[${maxDate}], minDate=[${minDate}]`)
     
     const maxCount = getCountryDateConfirmed(country, getLookupDateString(maxDate))
     var lastDateString = 0;
@@ -572,8 +572,8 @@ async function calculateDailyStatsByCountry(auth) {
     //startDate = new Date(startDateString)
     //var date = new Date()
     //date.setDate(date.getDate()-1)
-    //console.log(findDoubledDate('US', date, startDate))
-    //console.log('==== break out')
+    //debug(findDoubledDate('US', date, startDate))
+    //debug('==== break out')
     //return
 
     const sheetName = 'daily_stats_by_country'
@@ -606,25 +606,32 @@ async function calculateDailyStatsByCountry(auth) {
     var date = new Date(startDateString)
 
     today = new Date()
-    console.log('calculateDailyStatsByCountry: startDate', startDate);
-    console.log('calculateDailyStatsByCountry: date', date);
-    console.log('calculateDailyStatsByCountry: today', today);
+    debug('calculateDailyStatsByCountry: startDate', startDate);
+    debug('calculateDailyStatsByCountry: date', date);
+    debug('calculateDailyStatsByCountry: today', today);
     var rowNum = 1;
     while (date <= today) {
 	dateString=(date.getUTCMonth()+1) + '-' + date.getUTCDate() + '-' + date.getUTCFullYear() 
 	COUNTRIES.forEach(function (country){
 	    rowNum++
 
+
+	    var confirmed = `=sumif(confirmed_global!$B:$B,B${rowNum},indirect(vlookup(A${rowNum},date_range_2,3,false)))`
+	    var deaths = `=sumif(deaths_global!$B:$B,B${rowNum},indirect(vlookup(A${rowNum},date_range_2,2,false)))`
 	    var usEvent = ''
 	    if (country == 'US') {
 		usEvent = `=vlookup(E${rowNum}, events, 2, true)`
+	    } else if (country == WORLD) {
+		confirmed = `=sum(indirect(vlookup(A${rowNum},date_range_2,3,false)))`
+		deaths = `=sum(indirect(vlookup(A${rowNum},date_range_2,2,false)))`
 	    }
+	    
 	    var row = [
 		dateString,
 		country,
 		`=A${rowNum}&B${rowNum}`,
-		`=sumif(confirmed_global!$B:$B,B${rowNum},indirect(vlookup(A${rowNum},date_range_2,3,false)))`,
-		`=sumif(deaths_global!$B:$B,B${rowNum},indirect(vlookup(A${rowNum},date_range_2,2,false)))`,
+		confirmed,
+		deaths,
 		usEvent,
 		`=VLOOKUP(B${rowNum},population_2020,2,false)`,
 		`=D${rowNum}/G${rowNum}`,
@@ -637,7 +644,7 @@ async function calculateDailyStatsByCountry(auth) {
 	    ]
 	    values.push(row)
 	});
-	console.log('calculateDailyStatsByCountry: date', date);
+	debug('calculateDailyStatsByCountry: date', date);
         date.setDate(date.getDate() + 1)
     }
 
@@ -658,7 +665,7 @@ async function calculateDailyStatsByCountry(auth) {
     try {
 	//const response = (await sheets.spreadsheets.values.update(request)).data;
 	const response = sheets.spreadsheets.values.update(request).data;
-	console.log(JSON.stringify(response, null, 2));
+	debug(JSON.stringify(response, null, 2));
     } catch (err) {
 	console.error(err);
     }
