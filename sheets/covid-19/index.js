@@ -568,14 +568,6 @@ function findDoubledDate( country, maxDate, minDate ) {
  */
 async function calculateDailyStatsByCountry(auth) {
 
-    //const startDateString=`${START_DATE} 12:00:00 AM`
-    //startDate = new Date(startDateString)
-    //var date = new Date()
-    //date.setDate(date.getDate()-1)
-    //debug(findDoubledDate('US', date, startDate))
-    //debug('==== break out')
-    //return
-
     const sheetName = 'daily_stats_by_country'
 
     await createSheet(auth, SPREADSHEET_ID, sheetName)
@@ -605,12 +597,15 @@ async function calculateDailyStatsByCountry(auth) {
     startDate = new Date(startDateString)
     var date = new Date(startDateString)
 
-    today = new Date()
+    maxDate = new Date()
+    //the data is typically one day behind today.  Could add a
+    //function to find the exact max date, but this will do for now.
+    maxDate.setDate(maxDate.getDate() - 1)
     debug('calculateDailyStatsByCountry: startDate', startDate);
     debug('calculateDailyStatsByCountry: date', date);
-    debug('calculateDailyStatsByCountry: today', today);
+    debug('calculateDailyStatsByCountry: maxDate', maxDate);
     var rowNum = 1;
-    while (date <= today) {
+    while (date <= maxDate) {
 	dateString=(date.getUTCMonth()+1) + '-' + date.getUTCDate() + '-' + date.getUTCFullYear() 
 	COUNTRIES.forEach(function (country){
 	    rowNum++
