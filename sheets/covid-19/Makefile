@@ -23,7 +23,7 @@ node_modules: package.json ## install nodejs libs
 	touch $@
 
 .PHONY:
-node: ../../../COVID-19 node_modules ## run the node app
+run: ../../../COVID-19 node_modules ## run the node app
 	node .
 
 .PHONY: clean
