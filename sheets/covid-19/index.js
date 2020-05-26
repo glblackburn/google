@@ -26,16 +26,20 @@ const DEATHS_SHEET_NAME = 'deaths_global'
 const START_DATE = '2020-01-22'
 const WORLD = 'World'
 const COUNTRIES = [
+    'Brazil',
     'China',
     'Germany',
     'India',
     'Iran',
     'Italy',
+    'Russia',
     'Spain',
     'Sweden',
     'US',
+    'United Kingdom',
     WORLD,
 ]
+
 
 // Load client secrets from a local file.
 fs.readFile('credentials.json', (err, content) => {
