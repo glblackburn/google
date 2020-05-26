@@ -44,7 +44,7 @@ fs.readFile('credentials.json', (err, content) => {
     //authorize(JSON.parse(content), listPercentPopulation);
     //authorize(JSON.parse(content), addSheet);
     //authorize(JSON.parse(content), setCountries);
-    //authorize(JSON.parse(content), setDateRanges);
+    authorize(JSON.parse(content), setDateRanges);
 
     authorize(JSON.parse(content), loadConfirmedGlobalSheet);
     authorize(JSON.parse(content), loadDeathsGlobalSheet);
@@ -491,7 +491,7 @@ function setDateRanges(auth) {
 
     const deathTab = DEATHS_SHEET_NAME
     const confirmedTab = CONFIRMED_SHEET_NAME
-    const days = 120
+    const days = 200
     //const startDateString='2020-03-01 12:00:00 AM'
     //const startColumnNum = alphaToNum('AR')
     const startDateString='2020-01-22 12:00:00 AM'
@@ -510,7 +510,7 @@ function setDateRanges(auth) {
 
     const request = {
 	// The ID of the spreadsheet to update.
-	spreadsheetId: spreadsheetId,
+	spreadsheetId: SPREADSHEET_ID,
 	// The A1 notation of the values to update.
 	"range": range,
 	// How the input data should be interpreted.
