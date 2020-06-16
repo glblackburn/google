@@ -2,8 +2,16 @@ SHELL=/bin/bash
 .EXPORT_ALL_VARIABLES:
 .SHELLFLAGS = -uec -o pipefail
 
+CONFIG_JSON = "config.json"
+
 default: help
 
+.PHONY:
+install-jq: ## install jq see: https://stedolan.github.io/jq/
+	brew install jq
+
+.PHONY:
+setup: install-jq ## install external apps needed to build and run
 
 ../../../COVID-19:
 	make clone_covid_data
@@ -25,6 +33,11 @@ node_modules: package.json ## install nodejs libs
 .PHONY:
 run: ../../../COVID-19 node_modules ## run the node app
 	node .
+
+.PHONY:
+open-sheet: ## open google sheet in browser
+	jq -r .spreadsheetId ${CONFIG_JSON}
+	open https://docs.google.com/spreadsheets/d/$$(jq -r .spreadsheetId ${CONFIG_JSON})
 
 .PHONY: clean
 clean: ## Removes all files in the .gitignore
