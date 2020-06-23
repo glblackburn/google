@@ -14,12 +14,15 @@ const SCOPES = ['https://www.googleapis.com/auth/spreadsheets'];
 // time.
 const TOKEN_PATH = 'token.json';
 
-const CONFIRMED_CSV='../../../COVID-19/csse_covid_19_data/csse_covid_19_time_series/time_series_covid19_confirmed_global.csv'
-console.log(`CONFIRMED_CSV=[${CONFIRMED_CSV}]`)
-console.log(path.resolve(__dirname, CONFIRMED_CSV))
-const DEATHS_CSV='../../../COVID-19/csse_covid_19_data/csse_covid_19_time_series/time_series_covid19_deaths_global.csv'
 
 const SPREADSHEET_ID = config.spreadsheetId
+const COVID_19_DATA_PATH = config.covid19DataPath
+
+const CONFIRMED_CSV=`${COVID_19_DATA_PATH}/csse_covid_19_data/csse_covid_19_time_series/time_series_covid19_confirmed_global.csv`
+console.log(`CONFIRMED_CSV=[${CONFIRMED_CSV}]`)
+console.log(path.resolve(__dirname, CONFIRMED_CSV))
+const DEATHS_CSV=`${COVID_19_DATA_PATH}/csse_covid_19_data/csse_covid_19_time_series/time_series_covid19_deaths_global.csv`
+
 const CONFIRMED_SHEET_NAME = 'confirmed_global'
 const DEATHS_SHEET_NAME = 'deaths_global'
 

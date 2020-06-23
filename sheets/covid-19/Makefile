@@ -3,6 +3,9 @@ SHELL=/bin/bash
 .SHELLFLAGS = -uec -o pipefail
 
 CONFIG_JSON = "config.json"
+COVID19_DATA_GIT := $(shell jq -r .covid19DataGit ${CONFIG_JSON})
+COVID19_DATA_PATH := $(shell jq -r .covid19DataPath ${CONFIG_JSON})
+SPREADSHEET_ID := $(shell jq -r .spreadsheetId ${CONFIG_JSON})
 
 default: help
 
@@ -13,25 +16,30 @@ install-jq: ## install jq see: https://stedolan.github.io/jq/
 .PHONY:
 setup: install-jq ## install external apps needed to build and run
 
-../../../COVID-19:
+.PHONY:
+${COVID19_DATA_PATH}:
 	make clone_covid_data
 
 .PHONY:
-clone_covid_data: ## clone COVID-19 data from github.com
+clone_covid_data: jq ## clone COVID-19 data from github.com
 	echo "git clone COVID-19 data from github.com"
-	cd ../../.. && git clone git@github.com:CSSEGISandData/COVID-19.git
+	echo "COVID19_DATA_GIT=[${COVID19_DATA_GIT}]"
+	cd $(shell dirname ${COVID19_DATA_PATH}) && git clone ${COVID19_DATA_GIT} $(shell basename ${COVID19_DATA_PATH})
 
 .PHONY:
-pull_covid_data: ../../../COVID-19 ## update COVID-19 data from github.com
+covid_data: ${COVID19_DATA_PATH}
+
+.PHONY:
+pull_covid_data: covid_data ## update COVID-19 data from github.com
 	echo "git pull COVID-19 data from github.com"
-	cd ../../../COVID-19 && git pull
+	cd ${COVID19_DATA_PATH} && git pull
 
 node_modules: package.json ## install nodejs libs
 	npm i
 	touch $@
 
 .PHONY:
-run: ../../../COVID-19 node_modules ## run the node app
+run: pull_covid_data node_modules ## run the node app
 	node .
 
 /usr/local/bin/jq:
@@ -42,8 +50,7 @@ jq: /usr/local/bin/jq
 
 .PHONY:
 open-sheet: jq ## open google sheet in browser
-	jq -r .spreadsheetId ${CONFIG_JSON}
-	open https://docs.google.com/spreadsheets/d/$$(jq -r .spreadsheetId ${CONFIG_JSON})
+	open https://docs.google.com/spreadsheets/d/${SPREADSHEET_ID}
 
 .PHONY: clean
 clean: ## Removes all files in the .gitignore
