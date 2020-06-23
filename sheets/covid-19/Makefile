@@ -34,8 +34,14 @@ node_modules: package.json ## install nodejs libs
 run: ../../../COVID-19 node_modules ## run the node app
 	node .
 
+/usr/local/bin/jq:
+	echo "need to install jq"
+	brew install jq
+
+jq: /usr/local/bin/jq
+
 .PHONY:
-open-sheet: ## open google sheet in browser
+open-sheet: jq ## open google sheet in browser
 	jq -r .spreadsheetId ${CONFIG_JSON}
 	open https://docs.google.com/spreadsheets/d/$$(jq -r .spreadsheetId ${CONFIG_JSON})
 
